@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Monitoring Dashboard</title>
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  <style>
+    /* Header styling */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
+    }
+    .header h1 {
+      margin: 0 0 10px 0;
+      color: #ffffff;
+    }
+    .header p {
+      margin: 0;
+      color: #e0e0e0a8;
+    }
+    /* Dashboard layout */
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    /* Sidebar styling */
+    .sidebar {
+      flex: 0 0 300px;
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .sidebar h4 {
+      margin-top: 0;
+      color: #fff;
+    }
+    .form-group.buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .select-btn {
+      flex: 1;
+      padding: 10px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #6d6c6c7e;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-align: center;
+    }
+    .select-btn:hover {
+      background: #1e1e1e;
+    }
+    .camera-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .camera-toggle {
+      background-color: #292929;
+      color: #e0e0e0;
+      padding: 12px 15px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+      min-width: 140px;
+      user-select: none;
+      word-break: break-word;
+      font-size: 13px;
+      height: auto;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .camera-toggle.active {
+      background-color: #1e1e1e;
+      border-color: #4CAF50;
+      box-shadow: 0 0 12px rgba(76, 175, 80, 0.2);
+    }
+    /* Metrics area */
+    .metrics {
+      flex: 1 1 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #333;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #333;
+      margin-bottom: 15px;
+    }
+    .card-header h5 {
+      margin: 0;
+      color: #fff;
+    }
+    .device-id {
+      font-size: 12px;
+      color: #aaa;
+    }
+    .metrics-container {
+      background-color: #292929;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .metrics-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      border-bottom: 1px solid #333;
+    }
+    .metrics-row:last-child {
+      border-bottom: none;
+    }
+    .metrics-label {
+      color: #888;
+      font-size: 14px;
+    }
+    .metrics-value {
+      font-family: 'Courier New', monospace;
+      color: #4CAF50;
+      font-size: 16px;
+      min-width: 60px;
+      text-align: right;
+      padding: 4px 8px;
+      background-color: #1e1e1e;
+      border-radius: 4px;
+    }
+    .lastUpdated {
+      color: #888;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #1e1e1e;
+      border-radius: 4px;
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-connected {
+      background-color: #4CAF50;
+      box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+    }
+    .status-disconnected {
+      background-color: #f44336;
+      box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+    }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 4px;
+      background-color: #292929;
+    }
+    .connection-status-text {
+      font-size: 12px;
+      color: #e0e0e0;
+    }
+    
+    /* Anomaly panel styling */
+    .anomaly-panel {
+      flex: 0 0 100%;
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border: 1px solid #333;
+    }
+    .anomaly-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #333;
+      margin-bottom: 15px;
+    }
+    .anomaly-header h4 {
+      margin: 0;
+      color: #fff;
+    }
+    .anomaly-list {
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: #292929;
+      border-radius: 8px;
+      padding: 0;
+    }
+    .anomaly-item {
+      display: flex;
+      padding: 12px 15px;
+      border-bottom: 1px solid #333;
+      align-items: center;
+      background-color: #1e1e1e;
+      margin-bottom: 4px;
+      transition: background-color 0.3s ease;
+    }
+    .anomaly-item:last-child {
+      border-bottom: none;
+    }
+    .anomaly-item:hover {
+      background-color: #2a2a2a;
+    }
+    .anomaly-icon {
+      background-color: #f44336;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .anomaly-details {
+      flex-grow: 1;
+    }
+    .anomaly-description {
+      color: #e0e0e0;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .anomaly-meta {
+      display: flex;
+      justify-content: space-between;
+    }
+    .anomaly-camera {
+      color: #aaa;
+      font-size: 12px;
+    }
+    .anomaly-time {
+      color: #888;
+      font-size: 12px;
+    }
+    .anomaly-details-extra {
+      color: #ff9800;
+      font-size: 12px;
+      margin: 2px 0;
+      padding: 2px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Green interval list styling */
+    .green-intervals-container {
+      max-height: 100px;
+      overflow-y: auto;
+      margin-top: 5px;
+    }
+    .green-interval-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-bottom: 1px solid #333;
+      font-size: 12px;
+    }
+    .green-interval-item:last-child {
+      border-bottom: none;
+    }
+    .green-interval-id {
+      color: #aaa;
+    }
+    .green-interval-duration {
+      color: #4CAF50;
+    }
+
+    /* Toast notification styling */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .toast {
+      background-color: #ff3030;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      min-width: 300px;
+      max-width: 450px;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      animation: slide-in 0.3s forwards;
+      position: relative; /* For absolute positioning of close button */
+    }
+    
+    @keyframes slide-in {
+      100% { transform: translateX(0); }
+    }
+    
+    @keyframes fade-out {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    .toast.fade-out {
+      animation: fade-out 0.5s forwards;
+    }
+    
+    .toast-icon {
+      background-color: white;
+      color: #ff3030;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    
+    .toast-content {
+      flex-grow: 1;
+    }
+    
+    .toast-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 16px;
+    }
+    
+    .toast-message {
+      font-size: 14px;
+    }
+    
+    .anomaly-count-badge {
+      background-color: #ff3030;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 8px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    .clear-all-btn {
+      background-color: #333;
+      color: #e0e0e0;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .clear-all-btn:hover {
+      background-color: #444;
+    }
+
+    .toast-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .toast-close:hover {
+      opacity: 1;
+    }
+
+    .popup-modal {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      animation: slide-in 0.5s ease-out;
+    }
+
+    .popup-content {
+      background: #1E1E2E;
+      border: 2px solid #F38BA8;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .popup-header {
+      background: #F38BA8;
+      padding: 15px;
+      border-radius: 6px 6px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .popup-header h2 {
+      color: #1E1E2E;
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .popup-body {
+      padding: 20px;
+      color: #CDD6F4;
+    }
+
+    .popup-message {
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .popup-details {
+      background: #313244;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .popup-footer {
+      padding: 15px;
+      text-align: right;
+      border-top: 1px solid #313244;
+    }
+
+    .popup-acknowledge {
+      background: #89B4FA;
+      color: #1E1E2E;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .popup-close {
+      background: none;
+      border: none;
+      color: #1E1E2E;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    @keyframes slide-in {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .fade-out {
+      animation: fade-out 0.5s ease-out forwards;
+    }
+
+    @keyframes fade-out {
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Real-time Monitoring Dashboard</h1>
+    <p>Monitor camera feeds and alerts</p>
+  </div>
+  
+  <div class="dashboard">
+    <div class="sidebar">
+      <h4>Camera Settings</h4>
+      <div class="form-group buttons">
+        <button id="selectAll" class="select-btn">Select All</button>
+        <button id="deselectAll" class="select-btn">Deselect All</button>
+      </div>
+      <div class="form-group">
+        <div id="cameraControls" class="camera-controls">
+          <!-- Camera toggles will be added dynamically -->
+        </div>
+      </div>
+    </div>
+    
+    <div class="metrics" id="cameraCards">
+      <!-- Metric cards will be added dynamically -->
+    </div>
+    
+    <div class="anomaly-panel">
+      <div class="anomaly-header">
+        <h4>Anomalies <span class="anomaly-count-badge" id="anomalyCount">0</span></h4>
+        <button id="clearAllAnomalies" class="clear-all-btn">Clear All</button>
+      </div>
+      <div class="anomaly-list" id="anomalyList">
+        <!-- Anomaly items will be added dynamically -->
+      </div>
+    </div>
+  </div>
+  
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const socket = io();
+    const activeDeviceChannels = new Map(); // Store device+channel combinations
+    let anomalyCount = 0;
+    let knownDevices = new Map(); // To track all discovered devices
+
+    // Format green intervals for display
+    function formatGreenIntervals(intervals) {
+      if (!intervals || Object.keys(intervals).length === 0) {
+        return "<div>No active intervals</div>";
+      }
+      let html = `<div class="green-intervals-container">`;
+      for (const [id, data] of Object.entries(intervals)) {
+        html += `<div class="green-interval-item">
+                   <span class="green-interval-id">ID: ${data.id}</span>
+                   <span class="green-interval-duration">${data.duration}s</span>
+                 </div>`;
+      }
+      html += `</div>`;
+      return html;
+    }
+    
+    // Create a toast notification
+    function showToast(title, message, duration = 5000) {
+      const toastContainer = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <div class="toast-icon">!</div>
+        <div class="toast-content">
+          <div class="toast-title">${title}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close">&times;</button>
+      `;
+      
+      // Add click handler for the close button
+      const closeButton = toast.querySelector('.toast-close');
+      closeButton.addEventListener('click', function() {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 500);
+      });
+      
+      toastContainer.appendChild(toast);
+      
+      // Play notification sound if available
+      const notificationSound = document.getElementById('notificationSound');
+      if (notificationSound) {
+        notificationSound.play().catch(error => console.log('Error playing sound:', error));
+      }
+      
+      // Remove the toast after duration
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 500);
+      }, duration);
+    }
+    
+    function createCameraToggle(deviceId, channel) {
+      const toggleId = `toggle-${deviceId}-${channel}`;
+      return `<div class="camera-toggle active" id="${toggleId}" data-device="${deviceId}" data-channel="${channel}">
+                Device: ${deviceId}<br>Channel ${channel}
+              </div>`;
+    }
+    
+    // Create a placeholder card for a device-channel
+    function createPlaceholderCard(deviceId, channel, metrics) {
+      return `
+        <div id="card-${deviceId}-${channel}" class="card" data-device="${deviceId}" data-camera="${channel}">
+          <div class="card-header">
+            <div>
+              <h5>Channel ${channel}</h5>
+              <span class="device-id">Device: ${deviceId}</span>
+            </div>
+            <div class="connection-status">
+              <div class="status-dot status-connected"></div>
+              <span class="connection-status-text">Connected</span>
+            </div>
+          </div>
+          <div class="metrics-container">
+            <div class="metrics-row">
+              <span class="metrics-label">Green Intervals</span>
+              <div class="metrics-value greenIntervals">Loading...</div>
+            </div>
+            <div class="metrics-row">
+              <span class="metrics-label">People Count</span>
+              <span class="metrics-value peopleCount">Loading...</span>
+            </div>
+            <div class="metrics-row">
+              <span class="metrics-label">Lab Coat Count</span>
+              <span class="metrics-value labCoatCount">Loading...</span>
+            </div>
+            <div class="metrics-row">
+              <span class="metrics-label">Last Updated</span>
+              <span class="metrics-value lastUpdated">Loading...</span>
+            </div>
+          </div>
+        </div>`;
+    }
+    
+    function createCard(deviceId, channel, metrics) {
+      const greenIntervalsHtml = formatGreenIntervals(metrics.green_intervals);
+      return `
+        <div class="card" id="card-${deviceId}-${channel}">
+          <div class="card-header">
+            <h5>Channel ${channel}</h5>
+            <span class="device-id">${deviceId}</span>
+          </div>
+          <div class="metrics-container">
+            <div class="metrics-row">
+              <span class="metrics-label">People Count</span>
+              <span class="metrics-value peopleCount">${metrics.people_count || 0}</span>
+            </div>
+            <div class="metrics-row">
+              <span class="metrics-label">Lab Coat Count</span>
+              <span class="metrics-value labCoatCount">${metrics.lab_coat_count || 0}</span>
+            </div>
+            <div class="metrics-row">
+              <span class="metrics-label">Green Intervals</span>
+              <div class="greenIntervals">${greenIntervalsHtml}</div>
+            </div>
+          </div>
+          <div class="lastUpdated">Last updated: ${metrics.last_updated || 'N/A'}</div>
+        </div>
+      `;
+    }
+    
+    function updateCardMetrics(card, metrics) {
+      const greenIntervalsHtml = formatGreenIntervals(metrics.green_intervals);
+      card.querySelector('.greenIntervals').innerHTML = greenIntervalsHtml;
+      card.querySelector('.peopleCount').textContent = metrics.people_count || 0;
+      card.querySelector('.labCoatCount').textContent = metrics.lab_coat_count || 0;
+      card.querySelector('.lastUpdated').textContent = `Last updated: ${metrics.last_updated || 'N/A'}`;
+    }
+    
+    function addAnomalyToList(anomaly) {
+      const anomalyList = document.getElementById('anomalyList');
+      const anomalyCountElem = document.getElementById('anomalyCount');
+      
+      const deviceText = anomaly.device_id ? `Device: ${anomaly.device_id.substring(0, 8)}...` : '';
+      const anomalyItem = `
+          <div class="anomaly-item">
+              <div class="anomaly-icon">!</div>
+              <div class="anomaly-details">
+                  <div class="anomaly-description">${anomaly.description}</div>
+                  <div class="anomaly-meta">
+                      <span class="anomaly-camera">${deviceText} Channel ${anomaly.channel}</span>
+                      <span class="anomaly-time">${anomaly.timestamp}</span>
+                  </div>
+              </div>
+          </div>
+      `;
+      
+      anomalyList.insertAdjacentHTML('afterbegin', anomalyItem);
+      anomalyCount++;
+      anomalyCountElem.textContent = anomalyCount;
+      
+      // Show toast for each anomaly
+      let toastTitle = "Anomaly Detected";
+      let toastMsg = `${anomaly.description} (${deviceText} Channel ${anomaly.channel})`;
+      showToast(toastTitle, toastMsg);
+      
+      // Limit list size to prevent excessive DOM growth
+      const maxItems = 20;
+      const items = anomalyList.querySelectorAll('.anomaly-item');
+      if (items.length > maxItems) {
+          items[items.length - 1].remove();
+      }
+      
+      // Highlight the corresponding card
+      const card = document.getElementById(`card-${anomaly.device_id}-${anomaly.channel}`);
+      if (card) {
+          card.style.borderColor = '#f44336';
+          card.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.3)';
+          setTimeout(() => {
+              card.style.borderColor = '#333';
+              card.style.boxShadow = 'none';
+          }, 5000);
+      }
+    }
+    
+    function setupCameraControls() {
+      const controlsContainer = document.getElementById('cameraControls');
+      controlsContainer.innerHTML = "";
+      
+      controlsContainer.addEventListener('click', (e) => {
+        const toggle = e.target.closest('.camera-toggle');
+        if (!toggle) return;
+        const deviceId = toggle.dataset.device;
+        const channel = toggle.dataset.channel;
+        toggle.classList.toggle('active');
+        if (toggle.classList.contains('active')) {
+          if (!activeDeviceChannels.has(deviceId)) {
+            activeDeviceChannels.set(deviceId, new Set());
+          }
+          activeDeviceChannels.get(deviceId).add(channel);
+          
+          const cardId = `card-${deviceId}-${channel}`;
+          if (!document.getElementById(cardId)) {
+            const placeholderMetrics = {
+              green_intervals: {},
+              people_count: 'Loading...',
+              lab_coat_count: 'Loading...',
+              last_updated: 'Loading...'
+            };
+            const metricsContainer = document.getElementById('cameraCards');
+            metricsContainer.insertAdjacentHTML('beforeend', createPlaceholderCard(deviceId, channel, placeholderMetrics));
+          }
+        } else {
+          if (activeDeviceChannels.has(deviceId)) {
+            activeDeviceChannels.get(deviceId).delete(channel);
+            if (activeDeviceChannels.get(deviceId).size === 0) {
+              activeDeviceChannels.delete(deviceId);
+            }
+          }
+          const cardId = `card-${deviceId}-${channel}`;
+          const card = document.getElementById(cardId);
+          if (card) card.remove();
+        }
+      });
+    }
+    
+    document.getElementById('selectAll').addEventListener('click', function() {
+      const toggles = document.querySelectorAll('.camera-toggle');
+      toggles.forEach(toggle => {
+        toggle.classList.add('active');
+        const deviceId = toggle.dataset.device;
+        const channel = toggle.dataset.channel;
+        if (!activeDeviceChannels.has(deviceId)) {
+          activeDeviceChannels.set(deviceId, new Set());
+        }
+        activeDeviceChannels.get(deviceId).add(channel);
+        
+        const cardId = `card-${deviceId}-${channel}`;
+        if (!document.getElementById(cardId)) {
+          const placeholderMetrics = {
+            green_intervals: {},
+            people_count: 'Loading...',
+            lab_coat_count: 'Loading...',
+            last_updated: 'Loading...'
+          };
+          const metricsContainer = document.getElementById('cameraCards');
+          metricsContainer.insertAdjacentHTML('beforeend', createPlaceholderCard(deviceId, channel, placeholderMetrics));
+        }
+      });
+    });
+    
+    document.getElementById('deselectAll').addEventListener('click', function() {
+      const toggles = document.querySelectorAll('.camera-toggle');
+      toggles.forEach(toggle => {
+        toggle.classList.remove('active');
+        const deviceId = toggle.dataset.device;
+        const channel = toggle.dataset.channel;
+        
+        if (activeDeviceChannels.has(deviceId)) {
+          activeDeviceChannels.get(deviceId).delete(channel);
+          if (activeDeviceChannels.get(deviceId).size === 0) {
+            activeDeviceChannels.delete(deviceId);
+          }
+        }
+        
+        const cardId = `card-${deviceId}-${channel}`;
+        const card = document.getElementById(cardId);
+        if (card) card.remove();
+      });
+    });
+    
+    function registerDeviceChannel(deviceId, channel) {
+      if (!knownDevices.has(deviceId)) {
+        knownDevices.set(deviceId, new Set());
+      }
+      if (!knownDevices.get(deviceId).has(channel)) {
+        knownDevices.get(deviceId).add(channel);
+        const toggleId = `toggle-${deviceId}-${channel}`;
+        if (!document.getElementById(toggleId)) {
+          const controlsContainer = document.getElementById('cameraControls');
+          controlsContainer.insertAdjacentHTML('beforeend', createCameraToggle(deviceId, channel));
+          if (!activeDeviceChannels.has(deviceId)) {
+            activeDeviceChannels.set(deviceId, new Set());
+          }
+          activeDeviceChannels.get(deviceId).add(channel);
+        }
+      }
+    }
+    
+    socket.on('update_metrics', function(data) {
+      const deviceId = data.device_id;
+      const channel = data.channel.toString();
+      registerDeviceChannel(deviceId, channel);
+      if (!activeDeviceChannels.has(deviceId) || !activeDeviceChannels.get(deviceId).has(channel)) {
+        return;
+      }
+      const cardId = `card-${deviceId}-${channel}`;
+      let card = document.getElementById(cardId);
+      if (!card) {
+        const metricsContainer = document.getElementById('cameraCards');
+        metricsContainer.insertAdjacentHTML('beforeend', createCard(deviceId, channel, data.metrics));
+      } else {
+        updateCardMetrics(card, data.metrics);
+      }
+    });
+    
+    socket.on('anomaly', function(data) {
+      console.log("Received anomaly event:", data);
+      addAnomalyToList(data);
+    });
+    
+    function loadInitialDeviceMetrics() {
+      const metricsData = {{ metrics|tojson }};
+      if (metricsData) {
+        for (const [deviceId, channels] of Object.entries(metricsData)) {
+          for (const [channel, metrics] of Object.entries(channels)) {
+            registerDeviceChannel(deviceId, channel);
+          }
+        }
+      }
+    }
+    
+    function loadInitialAnomalies() {
+      const anomalyList = {{ anomalies|tojson }};
+      if (anomalyList && anomalyList.length > 0) {
+        for (const anomaly of anomalyList) {
+          addAnomalyToList(anomaly);
+        }
+      }
+    }
+    
+    socket.on('connect', function() {
+      console.log("Socket connected with ID:", socket.id);
+    });
+    
+    socket.on('disconnect', function() {
+      console.log("Socket disconnected!");
+    });
+    
+    socket.on('error', function(error) {
+      console.error("Socket error:", error);
+    });
+    
+    function fetchAvailableDevices() {
+      fetch('/api/devices')
+        .then(response => response.json())
+        .then(data => {
+          if (data.device_metrics) {
+            for (const [deviceId, channels] of Object.entries(data.device_metrics)) {
+              for (const channel of Object.keys(channels)) {
+                registerDeviceChannel(deviceId, channel);
+              }
+            }
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching devices:", error);
+        });
+    }
+    
+    // Initialize
+    setupCameraControls();
+    loadInitialDeviceMetrics();
+    loadInitialAnomalies();
+    fetchAvailableDevices();
+
+    document.getElementById('clearAllAnomalies').addEventListener('click', function() {
+      const anomalyList = document.getElementById('anomalyList');
+      const anomalyCountElem = document.getElementById('anomalyCount');
+      anomalyList.innerHTML = '';
+      anomalyCount = 0;
+      anomalyCountElem.textContent = '0';
+      document.querySelectorAll('.card').forEach(card => {
+        card.style.borderColor = '#333';
+        card.style.boxShadow = 'none';
+      });
+    });
+  });
+</script>
+
+<div class="toast-container" id="toastContainer">
+  <!-- Toast notifications will be added here -->
+</div>
+
+<!-- Add an audio element for notifications -->
+<audio id="notificationSound" preload="auto">
+  <source src="{{ url_for('static', filename='notification.mp3') }}" type="audio/mpeg">
+</audio>
+
+</body>
+</html>

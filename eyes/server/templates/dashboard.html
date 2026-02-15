@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Karel Electronics{% endblock %}
+
+{% block extra_head %}
+<style>
+    .sensor-card {
+        background: linear-gradient(135deg, #1a1f3c, #2a2f4c);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .sensor-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #7aa2f7;
+    }
+    .device-info {
+        background: linear-gradient(135deg, #2d8299, #636e72);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1>Karel Electronics Dashboard</h1>
+                <p>Real-time Monitoring System</p>
+            </div>
+            <div class="col-auto">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3">
+                        <span id="connection-status" class="badge badge-success">Connected</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-light">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="sidebar">
+                <h4>Device Status</h4>
+                {% for device_id, device_data in metrics.items() %}
+                <div class="device-info mb-3" data-device-id="{{ device_id }}">
+                    <h5>{{ device_id }}</h5>
+                    <small>Last Update: {{ heartbeats[device_id] }}</small>
+                </div>
+                {% endfor %}
+
+                <h4 class="mt-4">Recent Anomalies</h4>
+                <div id="anomalies-list">
+                    {% for anomaly in anomalies[:5] %}
+                    <div class="alert alert-danger">
+                        {{ anomaly.description }}
+                        <small class="d-block">{{ anomaly.timestamp }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="row">
+                {% for device_id, device_data in metrics.items() %}
+                    {% for channel, metrics_data in device_data.items() %}
+                    <div class="col-md-6 camera-card-container" data-device-id="{{ device_id }}" data-channel="{{ channel }}">
+                        <div class="camera-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Channel {{ channel }} (Device: {{ device_id }})</h5>
+                                <p class="card-text">People Count: {{ metrics_data.people_count }}</p>
+                                <p class="card-text">Lab Coat Count: {{ metrics_data.lab_coat_count }}</p>
+                                {% if metrics_data.door_status is defined %}
+                                <p class="card-text door-status">Door Status: {{ metrics_data.door_status }}</p>
+                                {% endif %}
+                                {% if metrics_data.tower_light is defined %}
+                                <p class="card-text tower-light">Tower Light: {{ metrics_data.tower_light }}</p>
+                                {% endif %}
+                                {% for i in range(1, 5) %}
+                                    {% set light_status_key = 'light_' ~ i ~ '_status' %}
+                                    {% if metrics_data[light_status_key] is defined and metrics_data[light_status_key] != 'N/A' and metrics_data[light_status_key] is not none and metrics_data[light_status_key] != '' %}
+                                        <p class="card-text light-status-{{ i }}">Light {{ i }} Status: {{ metrics_data[light_status_key] }}</p>
+                                    {% endif %}
+                                {% endfor %}
+                                <small>Last Update: {{ metrics_data.last_updated }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if device_id in sensor_data and sensor_data[device_id].data %}
+                    <div class="col-md-12 sensor-cards-container" data-device-id="{{ device_id }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="sensor-card">
+                                    <h6>Temperature</h6>
+                                    <div class="sensor-value">
+                                        {% if sensor_data[device_id].data.temperature is not none %}
+                                            {{ sensor_data[device_id].data.temperature | round(1) }}°C
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="sensor-card">
+                                    <h6>Humidity</h6>
+                                    <div class="sensor-value">
+                                        {% if sensor_data[device_id].data.humidity is not none %}
+                                            {{ sensor_data[device_id].data.humidity | round(1) }}%
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="sensor-card">
+                                    <h6>CO2</h6>
+                                    <div class="sensor-value">
+                                        {% if sensor_data[device_id].data.co2 is not none %}
+                                            {{ sensor_data[device_id].data.co2 | round(0) }} PPM
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="sensor-card">
+                                    <h6>Pressure</h6>
+                                    <div class="sensor-value">
+                                        {% if sensor_data[device_id].data.pressure is not none %}
+                                            {{ sensor_data[device_id].data.pressure | round(1) }} hPa
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="sensor-card">
+                                    <h6>Acceleration</h6>
+                                    <div class="sensor-value">
+                                        {% if sensor_data[device_id].data.acceleration is not none and sensor_data[device_id].data.acceleration | count == 3 %}
+                                            X: {{ sensor_data[device_id].data.acceleration[0] | round(2) }}<br>
+                                            Y: {{ sensor_data[device_id].data.acceleration[1] | round(2) }}<br>
+                                            Z: {{ sensor_data[device_id].data.acceleration[2] | round(2) }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Anomaly Popup Modal -->
+<div class="modal fade" id="anomalyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Anomaly Detected!</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="anomalyDescription"></p>
+                <small id="anomalyTimestamp"></small>
+                <div id="anomalySensorData" class="mt-3" style="display: none;">
+                    <h6>Environmental Data at Time of Anomaly:</h6>
+                    <div id="sensorReadings"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Configure Socket.IO with improved reconnection options
+    var socket = io({
+        reconnection: true,
+        reconnectionAttempts: Infinity,  // Increased from 5 to infinite attempts
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 30000,  // Increased timeout to match server ping_timeout
+        forceNew: false,
+        transports: ['websocket', 'polling']  // Try WebSocket first, fallback to polling
+    });
+
+    // Connection status indicators
+    socket.on('connect', function() {
+        console.log('Connected to server');
+        $('#connection-status').removeClass('text-danger').addClass('text-success').text('Connected');
+        setTimeout(function() {
+            console.log('Requesting refresh after connection');
+        }, 1000);
+    });
+
+    socket.on('disconnect', function() {
+        console.log('Disconnected from server');
+        $('#connection-status').removeClass('text-success').addClass('text-danger').text('Disconnected');
+    });
+
+    socket.on('connect_error', function(error) {
+        console.error('Connection error:', error);
+        $('#connection-status').removeClass('text-success').addClass('text-danger').text('Connection Error');
+    });
+
+    socket.on('reconnecting', function(attemptNumber) {
+        console.log('Attempting to reconnect...', attemptNumber);
+        $('#connection-status').removeClass('text-success').addClass('text-warning').text('Reconnecting...');
+    });
+
+    socket.on('config_update', function(data) {
+        console.log('Received configuration update:', data);
+    });
+
+    socket.on('update_metrics', function(data) {
+        console.log('Received metrics update:', data);
+        updateMetricDisplay(data);
+    });
+
+    socket.on('device_disconnected', function(data) {
+        var deviceId = data.device_id;
+        console.log('[Dashboard] Device disconnected event received for:', deviceId);
+        // Remove camera cards for the device
+        $('.camera-card-container[data-device-id="' + deviceId + '"]').remove();
+        // Remove sensor cards container for the device
+        $('.sensor-cards-container[data-device-id="' + deviceId + '"]').remove();
+        // Remove device info from the sidebar
+        $('.device-info[data-device-id="' + deviceId + '"]').remove();
+        // Potentially remove other device-specific elements if any
+    });
+
+    socket.on('anomaly', function(data) {
+        console.log('Received anomaly:', data);
+        var anomalyHtml = '<div class="alert alert-danger">' +
+            data.description +
+            '<small class="d-block">' + data.timestamp + '</small></div>';
+        $('#anomalies-list').prepend(anomalyHtml);
+        if ($('#anomalies-list .alert').length > 5) {
+            $('#anomalies-list .alert:last-child').remove();
+        }
+    });
+
+    socket.on('popup_notification', function(data) {
+        console.log('Received popup notification:', data);
+        $('#anomalyDescription').text(data.description);
+        $('#anomalyTimestamp').text(data.timestamp);
+        if (data.sensor_data && typeof data.sensor_data === 'object') { // Check if sensor_data is an object
+            $('#anomalySensorData').show();
+            var sensorHtml = '';
+            
+            const temp = parseFloat(data.sensor_data.temperature);
+            if (!isNaN(temp)) {
+                sensorHtml += 'Temperature: ' + temp.toFixed(1) + '°C<br>';
+            }
+            const hum = parseFloat(data.sensor_data.humidity);
+            if (!isNaN(hum)) {
+                sensorHtml += 'Humidity: ' + hum.toFixed(1) + '%<br>';
+            }
+            const co2 = parseFloat(data.sensor_data.co2);
+            if (!isNaN(co2)) {
+                sensorHtml += 'CO2: ' + co2.toFixed(0) + ' PPM<br>';
+            }
+            // Add similar parsing for other sensor values if they are part of anomaly popups
+            $('#sensorReadings').html(sensorHtml || 'Sensor data not available or in unexpected format.');
+        } else {
+            $('#anomalySensorData').hide();
+            $('#sensorReadings').html(''); // Clear previous readings
+        }
+        $('#anomalyModal').modal('show');
+    });
+
+    function updateMetricDisplay(data) {
+        var deviceId = data.device_id;
+        var channel = data.channel; // Assuming channel is still relevant for camera cards
+        var metrics = data.metrics;
+        
+        console.log('[Dashboard] updateMetricDisplay. Device:', deviceId, 'Channel:', channel, 'Metrics:', metrics ? 'Present' : 'Missing', 'SensorData:', data.sensor_data ? 'Present' : 'Missing');
+
+        // Update device heartbeat in sidebar (if you have it displayed there)
+        if (metrics && metrics.last_updated) {
+            // Assuming your .device-info div in the sidebar has a place for last_updated
+            // For example, if it's the <small> tag:
+            $('.device-info[data-device-id="' + deviceId + '"]').find('small').text('Last Update: ' + metrics.last_updated);
+        }
+
+        // Logic for updating camera cards (people count, lab coat, lights, etc.)
+        var cardContainer = $('.camera-card-container[data-device-id="' + deviceId + '"][data-channel="' + channel + '"]');
+        var channelCard = cardContainer.find('.camera-card');
+
+        if (cardContainer.length && channelCard.length) {
+            // Update existing camera card
+            if (metrics) {
+                channelCard.find('p:contains("People Count")').text('People Count: ' + (metrics.hasOwnProperty('people_count') ? metrics.people_count : 'N/A'));
+                channelCard.find('p:contains("Lab Coat Count")').text('Lab Coat Count: ' + (metrics.hasOwnProperty('lab_coat_count') ? metrics.lab_coat_count : 'N/A'));
+                
+                var lastAppendedElement = channelCard.find('p:contains("Lab Coat Count")').last();
+
+                var doorElement = channelCard.find('.door-status');
+                if (metrics.hasOwnProperty('door_status')) {
+                    if (doorElement.length) {
+                        doorElement.text('Door Status: ' + metrics.door_status);
+                    } else {
+                        lastAppendedElement.after('<p class="card-text door-status">Door Status: ' + metrics.door_status + '</p>');
+                        doorElement = channelCard.find('.door-status').last(); // re-select
+                    }
+                    if (doorElement.length) lastAppendedElement = doorElement;
+                } else if (doorElement.length) {
+                    doorElement.remove();
+                }
+
+                var towerLightElement = channelCard.find('.tower-light');
+                if (metrics.hasOwnProperty('tower_light')) {
+                    if (towerLightElement.length) {
+                        towerLightElement.text('Tower Light: ' + metrics.tower_light);
+                    } else {
+                        lastAppendedElement.after('<p class="card-text tower-light">Tower Light: ' + metrics.tower_light + '</p>');
+                        towerLightElement = channelCard.find('.tower-light').last(); // re-select
+                    }
+                    if (towerLightElement.length) lastAppendedElement = towerLightElement;
+                } else if (towerLightElement.length) {
+                    towerLightElement.remove();
+                }
+
+                for (var i = 1; i <= 4; i++) {
+                    var lightStatusKey = 'light_' + i + '_status';
+                    var lightStatusElement = channelCard.find('.light-status-' + i);
+                    if (metrics.hasOwnProperty(lightStatusKey) && metrics[lightStatusKey] !== null && metrics[lightStatusKey] !== 'N/A' && metrics[lightStatusKey] !== '') {
+                        var statusText = 'Light ' + i + ' Status: ' + metrics[lightStatusKey];
+                        if (lightStatusElement.length) {
+                            lightStatusElement.text(statusText);
+                        } else {
+                            lastAppendedElement.after('<p class="card-text light-status-' + i + '">' + statusText + '</p>');
+                            lightStatusElement = channelCard.find('.light-status-' + i).last(); // re-select
+                        }
+                         if (lightStatusElement.length) lastAppendedElement = lightStatusElement;
+                    } else if (lightStatusElement.length) {
+                        lightStatusElement.remove();
+                    }
+                }
+                if (metrics.hasOwnProperty('last_updated')) {
+                    channelCard.find('small').text('Last Update: ' + metrics.last_updated);
+                }
+            }
+        } else {
+            // Create new camera card if it doesn't exist
+            var deviceContainer = $('.col-md-9 .row').first(); // Ensure this selector targets the correct row for camera cards
+            if (metrics && deviceContainer.length) {
+                var peopleCountText = metrics.hasOwnProperty('people_count') ? metrics.people_count : 'N/A';
+                var labCoatCountText = metrics.hasOwnProperty('lab_coat_count') ? metrics.lab_coat_count : 'N/A';
+                var lastUpdatedText = metrics.hasOwnProperty('last_updated') ? metrics.last_updated : new Date().toISOString();
+                var doorStatusHtml = metrics.hasOwnProperty('door_status') ? '<p class="card-text door-status">Door Status: ' + metrics.door_status + '</p>' : '';
+                var towerLightHtml = metrics.hasOwnProperty('tower_light') ? '<p class="card-text tower-light">Tower Light: ' + metrics.tower_light + '</p>' : '';
+                
+                var lightStatusesHtml = '';
+                for (var i = 1; i <= 4; i++) {
+                    var lightStatusKey = 'light_' + i + '_status';
+                    if (metrics.hasOwnProperty(lightStatusKey) && metrics[lightStatusKey] !== null && metrics[lightStatusKey] !== 'N/A' && metrics[lightStatusKey] !== '') {
+                        lightStatusesHtml += '<p class="card-text light-status-' + i + '">Light ' + i + ' Status: ' + metrics[lightStatusKey] + '</p>';
+                    }
+                }
+
+                var newCardHtml = 
+                    '<div class="col-md-6 camera-card-container" data-device-id="' + deviceId + '" data-channel="' + channel + '">' +
+                        '<div class="camera-card">' + // Ensure .camera-card has appropriate styling
+                            '<div class="card-body">' +
+                                '<h5 class="card-title">Channel ' + channel + ' (Device: ' + deviceId + ')</h5>' +
+                                '<p class="card-text">People Count: ' + peopleCountText + '</p>' +
+                                '<p class="card-text">Lab Coat Count: ' + labCoatCountText + '</p>' +
+                                doorStatusHtml +
+                                towerLightHtml +
+                                lightStatusesHtml +
+                                '<small>Last Update: ' + lastUpdatedText + '</small>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                // Prepend or append based on desired order
+                var existingDeviceCards = $('.camera-card-container[data-device-id="' + deviceId + '"]');
+                if (existingDeviceCards.length) {
+                    existingDeviceCards.last().after(newCardHtml);
+                } else {
+                    deviceContainer.prepend(newCardHtml);
+                }
+            }
+        }
+        
+        // Sensor data handling
+        var sensorContainer = $('.sensor-cards-container[data-device-id="' + deviceId + '"]');
+
+        // Check if sensor_data is present and valid in the current update
+        if (data.sensor_data && data.sensor_data.data && typeof data.sensor_data.data === 'object') {
+            var sensorValues = data.sensor_data.data;
+            
+            // If sensor container doesn't exist for this device, create it
+            if (!sensorContainer.length && Object.keys(sensorValues).length > 0) {
+                console.log('[Dashboard] Creating new sensor container for Device:', deviceId);
+                var mainContentRow = $('.col-md-9 > .row').first(); // Target for new sensor container
+                // Basic structure for sensor cards. Ensure class "sensor-card" and "sensor-value" are styled.
+                var newSensorContainerHtml = 
+                    '<div class="col-md-12 sensor-cards-container" data-device-id="' + deviceId + '">' +
+                        '<h5>Sensor Readings for ' + deviceId + '</h5>' + // Title for the sensor section
+                        '<div class="row">' + // Inner row for individual sensor cards
+                            '<div class="col-lg-3 col-md-6 mb-3"><div class="sensor-card"><h6>Temperature</h6><div class="sensor-value">N/A</div></div></div>' +
+                            '<div class="col-lg-3 col-md-6 mb-3"><div class="sensor-card"><h6>Humidity</h6><div class="sensor-value">N/A</div></div></div>' +
+                            '<div class="col-lg-3 col-md-6 mb-3"><div class="sensor-card"><h6>CO2</h6><div class="sensor-value">N/A</div></div></div>' +
+                            '<div class="col-lg-3 col-md-6 mb-3"><div class="sensor-card"><h6>Pressure</h6><div class="sensor-value">N/A</div></div></div>' +
+                            // Acceleration might need more space or different layout
+                            '<div class="col-lg-6 col-md-12 mb-3"><div class="sensor-card"><h6>Acceleration (X, Y, Z)</h6><div class="sensor-value">N/A</div></div></div>' +
+                        '</div>' +
+                    '</div>';
+                
+                // Append after the last camera card for this device, or to the main content row
+                var lastCameraCardForDevice = $('.camera-card-container[data-device-id="' + deviceId + '"]').last();
+                if (lastCameraCardForDevice.length) {
+                    lastCameraCardForDevice.after(newSensorContainerHtml);
+                } else {
+                    // If no camera cards, decide where to put it.
+                    // This might need adjustment based on your layout preference.
+                    // For now, appending to the main content row if no camera cards.
+                    mainContentRow.append(newSensorContainerHtml);
+                }
+                sensorContainer = $('.sensor-cards-container[data-device-id="' + deviceId + '"]'); // Re-select after creation
+            }
+
+            // If sensor container exists (either pre-existing or just created), update values
+            if (sensorContainer.length) {
+                console.log('[Dashboard] Updating sensor values for Device:', deviceId, 'Values:', sensorValues);
+
+                const tempVal = parseFloat(sensorValues.temperature);
+                sensorContainer.find('h6:contains("Temperature")').closest('.sensor-card').find('.sensor-value').text(!isNaN(tempVal) ? tempVal.toFixed(1) + '°C' : 'N/A');
+                
+                const humVal = parseFloat(sensorValues.humidity);
+                sensorContainer.find('h6:contains("Humidity")').closest('.sensor-card').find('.sensor-value').text(!isNaN(humVal) ? humVal.toFixed(1) + '%' : 'N/A');
+                
+                const co2Val = parseFloat(sensorValues.co2);
+                sensorContainer.find('h6:contains("CO2")').closest('.sensor-card').find('.sensor-value').text(!isNaN(co2Val) ? co2Val.toFixed(0) + ' PPM' : 'N/A');
+                
+                const pressVal = parseFloat(sensorValues.pressure);
+                sensorContainer.find('h6:contains("Pressure")').closest('.sensor-card').find('.sensor-value').text(!isNaN(pressVal) ? pressVal.toFixed(1) + ' hPa' : 'N/A');
+                
+                if (Array.isArray(sensorValues.acceleration) && sensorValues.acceleration.length === 3) {
+                    const accX = parseFloat(sensorValues.acceleration[0]);
+                    const accY = parseFloat(sensorValues.acceleration[1]);
+                    const accZ = parseFloat(sensorValues.acceleration[2]);
+                    if (!isNaN(accX) && !isNaN(accY) && !isNaN(accZ)) {
+                        var accHtml = 'X: ' + accX.toFixed(2) + 'g<br>Y: ' + accY.toFixed(2) + 'g<br>Z: ' + accZ.toFixed(2) + 'g';
+                        sensorContainer.find('h6:contains("Acceleration")').closest('.sensor-card').find('.sensor-value').html(accHtml);
+                    } else {
+                        sensorContainer.find('h6:contains("Acceleration")').closest('.sensor-card').find('.sensor-value').text('N/A');
+                    }
+                } else {
+                     // Handle if acceleration is not an array or has wrong length
+                    sensorContainer.find('h6:contains("Acceleration")').closest('.sensor-card').find('.sensor-value').text('N/A');
+                }
+            }
+        } else {
+            // No sensor_data in this update payload for this device (or it's invalid)
+            // This implies the server currently has no sensor data to report for this device.
+            // So, if a sensor container exists, clear its values to N/A.
+            if (sensorContainer.length) {
+                console.log('[Dashboard] No valid sensor data in update for Device:', deviceId, '. Setting sensor values to N/A.');
+                sensorContainer.find('.sensor-value').text('N/A');
+            }
+            // If sensorContainer didn't exist and no data came, nothing to do.
+        }
+    }
+</script>
+{% endblock %}

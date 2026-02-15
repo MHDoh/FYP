@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Karel Electronics Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    .login-card {
+        background: linear-gradient(135deg, #1a1f3c, #2a2f4c);
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        border: none;
+    }
+    
+    .login-card .card-header {
+        background: linear-gradient(135deg, #2d8299, #636e72);
+        border-bottom: none;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        padding: 1.5rem;
+    }
+    
+    .login-card .form-control {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+    
+    .login-card .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: white;
+        box-shadow: 0 0 0 0.2rem rgba(123, 162, 247, 0.25);
+    }
+    
+    .login-card label {
+        color: #7aa2f7;
+        font-weight: 500;
+    }
+    
+    .login-btn {
+        background: linear-gradient(135deg, #2d8299, #3498db);
+        border: none;
+        padding: 10px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .login-btn:hover {
+        background: linear-gradient(135deg, #3498db, #2d8299);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .alert-custom {
+        background-color: rgba(231, 76, 60, 0.8);
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card login-card">
+                <div class="card-header">
+                    <h3 class="text-center">Login to Monitoring System</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('login') }}">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block login-btn">Login</button>
+                    </form>
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-custom mt-3">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

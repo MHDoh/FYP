@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+/* Modern Dark Theme */
+:root {
+    --bg-dark: #121212;
+    --bg-card: #1e1e1e;
+    --bg-sidebar: #252525;
+    --color-primary: #8ab4f8;
+    --color-secondary: #bb86fc;
+    --color-accent: #03dac6;
+    --color-danger: #cf6679;
+    --color-warning: #ffb74d;
+    --color-success: #81c784;
+    --color-text: #e0e0e0;
+    --color-text-secondary: #b0b0b0;
+    --color-border: #333333;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --bg-config-card: #2a2d3a; /* New variable for config card background */
+    --bg-login-card: #2a3a4a; /* New variable for login card background */
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--color-text);
+    font-family: 'Roboto', 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.header {
+    background-color: var(--bg-sidebar);
+    padding: 1.5rem 0;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.container {
+    padding: 0 1.5rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.btn {
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.btn-light {
+    background-color: var(--bg-card);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn-light:hover {
+    background-color: #333333;
+    color: var(--color-text);
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #121212;
+}
+
+.btn-primary:hover {
+    background-color: #7aa3e6;
+    border-color: #7aa3e6;
+}
+
+/* Sensor and Device Cards */
+.sensor-card {
+    background: linear-gradient(135deg, #1e2030, #2d2d3a);
+    color: var(--color-text);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid #333;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sensor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.sensor-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--color-accent);
+}
+
+.device-info {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: var(--color-text);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--color-border);
+}
+
+.device-info h5 {
+    color: var(--color-primary);
+    margin-top: 0;
+}
+
+.camera-card {
+    background: linear-gradient(135deg, #2c3440, #3c4453);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.camera-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.camera-card .card-body {
+    padding: 1.25rem;
+}
+
+.camera-card .card-title {
+    color: var(--color-secondary);
+    margin-bottom: 1rem;
+}
+
+.sidebar {
+    background-color: var(--bg-sidebar);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 20px;
+}
+
+/* Status indicators */
+.badge {
+    padding: 0.5em 0.75em;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-success {
+    background-color: var(--color-success);
+    color: #121212;
+}
+
+.badge-danger {
+    background-color: var(--color-danger);
+    color: #ffffff;
+}
+
+.badge-warning {
+    background-color: var(--color-warning);
+    color: #121212;
+}
+
+.badge-info {
+    background-color: var(--color-primary);
+    color: #121212;
+}
+
+/* Alert for anomalies */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 15px;
+    margin-bottom: 15px;
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid transparent;
+}
+
+.alert-danger {
+    border-left-color: var(--color-danger);
+    background-color: rgba(207, 102, 121, 0.1);
+}
+
+/* Modal styling */
+.modal-content {
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header .close {
+    color: var(--color-text);
+    text-shadow: none;
+    opacity: 0.7;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--color-border);
+}
+
+/* Form styles */
+.form-control {
+    background-color: #2d2d2d;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 4px;
+}
+
+.form-control:focus {
+    background-color: #333;
+    border-color: var(--color-primary);
+    color: var(--color-text);
+    box-shadow: 0 0 0 0.2rem rgba(138, 180, 248, 0.25);
+}
+
+label {
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+/* Connection status */
+#connection-status {
+    display: inline-block;
+    padding: 0.5em 1em;
+    border-radius: 50px;
+    font-weight: 500;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--color-text);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th, .table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid var(--color-border);
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--color-border);
+    color: var(--color-secondary);
+}
+
+.table tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Config page specific */
+.config-section {
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+}
+
+.config-section h3 {
+    color: var(--color-secondary);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 10px;
+}
+
+/* Configuration page cards styling */
+#configForm .card {
+    background-color: var(--bg-config-card);
+    border: 1px solid var(--color-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1.5rem;
+}
+
+#configForm .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+#configForm .card-header {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0.8rem 1.25rem;
+}
+
+#configForm .card-header h4 {
+    margin-bottom: 0;
+    color: var(--color-secondary);
+    font-size: 1.1rem;
+}
+
+/* Login specific styles */
+.login-container .card {
+    background-color: var(--bg-login-card);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-container .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.login-container .card-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--color-border);
+    padding: 1.25rem;
+}
+
+.login-container .card-header h3 {
+    margin: 0;
+    color: var(--color-primary);
+}

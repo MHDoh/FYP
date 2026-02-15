@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>System Configuration</h2>
+    <form id="configForm" class="mt-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Crowd Detection Settings</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="crowd_group_size">Group Size Threshold</label>
+                    <input type="number" class="form-control" id="crowd_group_size" name="crowd.group_size" 
+                           value="{{ config.crowd.group_size }}" min="1" step="1">
+                    <small class="form-text text-muted">Number of people that triggers a crowd anomaly</small>
+                </div>
+                <div class="form-group">
+                    <label for="crowd_duration">Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="crowd_duration" name="crowd.duration" 
+                           value="{{ config.crowd.duration }}" min="1" step="1">
+                    <small class="form-text text-muted">How long a crowd must persist to trigger an anomaly</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Lab Coat Compliance Settings</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="lab_coat_duration">Missing Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="lab_coat_duration" name="lab_coat.missing_duration" 
+                           value="{{ config.lab_coat.missing_duration }}" min="1" step="1">
+                    <small class="form-text text-muted">How long before triggering a lab coat violation</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Tower Light Settings</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="tower_green_duration">Green Light Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="tower_green_duration" name="tower_light.green_duration" 
+                           value="{{ config.tower_light.green_duration }}" min="1" step="1">
+                    <small class="form-text text-muted">How long before a persistent green light triggers an anomaly</small>
+                </div>
+                <div class="form-group">
+                    <label for="tower_light_1_duration">Light 1 Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="tower_light_1_duration" name="tower_light.light_1_duration" 
+                           value="{{ config.tower_light.get('light_1_duration', 30) }}" min="1" step="1">
+                    <small class="form-text text-muted">Duration threshold for light 1</small>
+                </div>
+                <div class="form-group">
+                    <label for="tower_light_2_duration">Light 2 Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="tower_light_2_duration" name="tower_light.light_2_duration" 
+                           value="{{ config.tower_light.get('light_2_duration', 30) }}" min="1" step="1">
+                    <small class="form-text text-muted">Duration threshold for light 2</small>
+                </div>
+                <div class="form-group">
+                    <label for="tower_light_3_duration">Light 3 Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="tower_light_3_duration" name="tower_light.light_3_duration" 
+                           value="{{ config.tower_light.get('light_3_duration', 30) }}" min="1" step="1">
+                    <small class="form-text text-muted">Duration threshold for light 3</small>
+                </div>
+                <div class="form-group">
+                    <label for="tower_light_4_duration">Light 4 Duration Threshold (seconds)</label>
+                    <input type="number" class="form-control" id="tower_light_4_duration" name="tower_light.light_4_duration" 
+                           value="{{ config.tower_light.get('light_4_duration', 30) }}" min="1" step="1">
+                    <small class="form-text text-muted">Duration threshold for light 4</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Detection Confidence Settings</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="human_confidence">Human Detection Confidence</label>
+                    <input type="number" class="form-control" id="human_confidence" name="detection.human_confidence" 
+                           value="{{ config.detection.human_confidence }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="labcoat_confidence">Lab Coat Detection Confidence</label>
+                    <input type="number" class="form-control" id="labcoat_confidence" name="detection.labcoat_confidence" 
+                           value="{{ config.detection.labcoat_confidence }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="light_confidence">Light Detection Confidence</label>
+                    <input type="number" class="form-control" id="light_confidence" name="detection.light_confidence" 
+                           value="{{ config.detection.light_confidence }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="door_confidence">Door Detection Confidence</label>
+                    <input type="number" class="form-control" id="door_confidence" name="detection.door_confidence" 
+                           value="{{ config.detection.door_confidence }}" min="0" max="1" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Sensor Analysis Settings</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="window_size">Moving Average Window Size</label>
+                    <input type="number" class="form-control" id="window_size" name="sensors.window_size" 
+                           value="{{ config.sensors.window_size }}" min="1" max="100" step="1">
+                    <small class="form-text text-muted">Number of readings to consider for moving average calculation</small>
+                </div>
+
+                <h5 class="mt-4">CO2 Settings</h5>
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="co2_min">Minimum (ppm)</label>
+                            <input type="number" class="form-control" id="co2_min" name="sensors.co2.min" 
+                                   value="{{ config.sensors.co2.min }}" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="co2_max">Maximum (ppm)</label>
+                            <input type="number" class="form-control" id="co2_max" name="sensors.co2.max" 
+                                   value="{{ config.sensors.co2.max }}" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="co2_rate">Max Rate of Change</label>
+                            <input type="number" class="form-control" id="co2_rate" name="sensors.co2.rate_change" 
+                                   value="{{ config.sensors.co2.rate_change }}" min="0" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Temperature Settings</h5>
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="temp_min">Minimum (°C)</label>
+                            <input type="number" class="form-control" id="temp_min" name="sensors.temperature.min" 
+                                   value="{{ config.sensors.temperature.min }}" step="0.1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="temp_max">Maximum (°C)</label>
+                            <input type="number" class="form-control" id="temp_max" name="sensors.temperature.max" 
+                                   value="{{ config.sensors.temperature.max }}" step="0.1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="temp_rate">Max Rate of Change</label>
+                            <input type="number" class="form-control" id="temp_rate" name="sensors.temperature.rate_change" 
+                                   value="{{ config.sensors.temperature.rate_change }}" min="0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Humidity Settings</h5>
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="humidity_min">Minimum (%)</label>
+                            <input type="number" class="form-control" id="humidity_min" name="sensors.humidity.min" 
+                                   value="{{ config.sensors.humidity.min }}" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="humidity_max">Maximum (%)</label>
+                            <input type="number" class="form-control" id="humidity_max" name="sensors.humidity.max" 
+                                   value="{{ config.sensors.humidity.max }}" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="humidity_rate">Max Rate of Change</label>
+                            <input type="number" class="form-control" id="humidity_rate" name="sensors.humidity.rate_change" 
+                                   value="{{ config.sensors.humidity.rate_change }}" min="0" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Pressure Settings</h5>
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="pressure_min">Minimum (hPa)</label>
+                            <input type="number" class="form-control" id="pressure_min" name="sensors.pressure.min" 
+                                   value="{{ config.sensors.pressure.min }}" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="pressure_max">Maximum (hPa)</label>
+                            <input type="number" class="form-control" id="pressure_max" name="sensors.pressure.max" 
+                                   value="{{ config.sensors.pressure.max }}" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="pressure_rate">Max Rate of Change</label>
+                            <input type="number" class="form-control" id="pressure_rate" name="sensors.pressure.rate_change" 
+                                   value="{{ config.sensors.pressure.rate_change }}" min="0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Acceleration Settings</h5>
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="acc_x_threshold">X-axis Threshold (g)</label>
+                            <input type="number" class="form-control" id="acc_x_threshold" name="sensors.acceleration.x_threshold" 
+                                   value="{{ config.sensors.acceleration.x_threshold if config.sensors.acceleration.x_threshold is not none else 2.0 }}" min="0" step="0.1">
+                            <small class="form-text text-muted">Max acceleration on X-axis</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="acc_y_threshold">Y-axis Threshold (g)</label>
+                            <input type="number" class="form-control" id="acc_y_threshold" name="sensors.acceleration.y_threshold" 
+                                   value="{{ config.sensors.acceleration.y_threshold if config.sensors.acceleration.y_threshold is not none else 2.0 }}" min="0" step="0.1">
+                            <small class="form-text text-muted">Max acceleration on Y-axis</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="acc_z_threshold">Z-axis Threshold (g)</label>
+                            <input type="number" class="form-control" id="acc_z_threshold" name="sensors.acceleration.z_threshold" 
+                                   value="{{ config.sensors.acceleration.z_threshold if config.sensors.acceleration.z_threshold is not none else 2.0 }}" min="0" step="0.1">
+                            <small class="form-text text-muted">Max acceleration on Z-axis</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Configuration</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {};
+    const inputs = this.querySelectorAll('input');
+    
+    inputs.forEach(input => {
+        const path = input.name.split('.');
+        let current = formData;
+        
+        for (let i = 0; i < path.length - 1; i++) {
+            if (!current[path[i]]) {
+                current[path[i]] = {};
+            }
+            current = current[path[i]];
+        }
+        
+        current[path[path.length - 1]] = parseFloat(input.value);
+    });
+
+    fetch('/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Configuration updated successfully');
+        } else {
+            alert('Error updating configuration: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating configuration');
+    });
+});
+</script>
+{% endblock %}
