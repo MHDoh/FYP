@@ -4,6 +4,24 @@
 
 {% block extra_head %}
 <style>
+    /* Full-page layered background for login */
+    body {
+        background: #080d18 !important;
+        background-image: none !important;
+        animation: none !important;
+    }
+
+    /* Radial glow orbs */
+    body::before {
+        background-image:
+            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(45, 130, 153, 0.18) 0%, transparent 70%),
+            radial-gradient(ellipse 50% 35% at 80% 70%, rgba(99, 110, 114, 0.15) 0%, transparent 70%),
+            linear-gradient(rgba(138, 180, 248, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(138, 180, 248, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 60px 60px, 60px 60px;
+        animation: grid-scroll 8s linear infinite !important;
+    }
+
     .login-card {
         background: linear-gradient(135deg, #1a1f3c, #2a2f4c);
         color: white;
